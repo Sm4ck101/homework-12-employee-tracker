@@ -47,6 +47,18 @@ function viewRoles() {
   });
 }
 
+function viewEmployees() {
+  const queryString = "SELECT * FROM employee";
+  db.query(queryString, (err, result) => {
+    if (err) {
+      console.log(err);
+      return;
+    }
+    console.table(result);
+    askNextQuestion();
+  });
+}
+
 function addDepartment(dept) {
   const queryString = `INSERT INTO department (name) 
     VALUES ('${dept.name}');`;
@@ -135,7 +147,7 @@ function askNextQuestion() {
         viewRoles();
         break;
       case "view all employees":
-        // viewEmployees()
+        viewEmployees();
         break;
       case "add a department":
         promptAddDepartment();
