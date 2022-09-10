@@ -47,8 +47,15 @@ function viewRoles() {
   });
 }
 
+// This is working but creating duplicates
 function viewEmployees() {
-  const queryString = "SELECT * FROM employee";
+  const queryString = `SELECT e1.id, e1.first_name, e1.last_name, e2.first_name AS manager, role.title, department.name AS department 
+  FROM employee e1
+  JOIN employee e2
+  ON e1.manager_id = e2.id
+  JOIN role ON e1.role_id = role.id
+  JOIN department ON role.department_id = department_id;`;
+  // const queryString = "SELECT * FROM employee";
   db.query(queryString, (err, result) => {
     if (err) {
       console.log(err);
@@ -137,6 +144,75 @@ function addRole(role) {
   });
 }
 
+function addEmployee(employee) {
+  const employeeString = `INSERT INTO employee  (first_name, last_name, manager_id, role_id)
+  VALUES ('${employee.first_name}', '${employee.last_name}', ${employee.manager_id}, ${employee.role_id});`;
+  db.query(employeeString, (err, results) => {
+    if (err) {
+      console.log(err);
+      return;
+    }
+    askNextQuestion();
+  });
+}
+
+function promptAddEmployee() {
+  const roleQuery = `SELECT * FROM role;`;
+  db.query(roleQuery, (err, roles) => {
+    if (err) {
+      console.log(err);
+      return;
+    }
+    const managerQuery = `SELECT * FROM employee WHERE manager_id IS NULL;`;
+    db.query(managerQuery, (managererr, manager) => {
+      if (managererr) {
+        console.log(managererr);
+        return;
+      }
+      var managerChoices = manager.map(
+        (employee) =>
+          `${employee.id} - ${employee.first_name} ${employee.last_name}`
+      );
+      var roleChoices = roles.map((role) => `${role.id} - ${role.title}`);
+      inquirer
+        .prompt([
+          {
+            type: "input",
+            name: "first_name",
+            message: "What is the employees first name?",
+          },
+          {
+            type: "input",
+            name: "last_name",
+            message: "What is the employees last name?",
+          },
+          {
+            type: "list",
+            name: "manager",
+            message: "Who is the manager?",
+            choices: managerChoices,
+          },
+          {
+            type: "list",
+            name: "role",
+            message: "What is the employees role?",
+            choices: roleChoices,
+          },
+        ])
+        .then((answers) => {
+          const managerId = parseInt(answers.manager.split(" - ")[0]);
+          const roleId = parseInt(answers.role.split(" - ")[0]);
+          addEmployee({
+            first_name: answers.first_name,
+            last_name: answers.last_name,
+            role_id: roleId,
+            manager_id: managerId,
+          });
+        });
+    });
+  });
+}
+
 function askNextQuestion() {
   inquirer.prompt(nextQuestion).then((answers) => {
     switch (answers.option) {
@@ -156,10 +232,13 @@ function askNextQuestion() {
         promptAddRole();
         break;
       case "add an employee":
-        // addEmployee()
+        promptAddEmployee();
         break;
       case "update an employee role":
         // updateRole()
+        // provide a list of employees
+        // what new role are they being updated to
+        // inquirer prompt
         break;
       default:
         return;
